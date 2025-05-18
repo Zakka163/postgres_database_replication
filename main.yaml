@@ -1,0 +1,32 @@
+
+
+docker rm -f pg-master 
+docker volume rm pg_master_data
+docker run -d \
+  --name pg-master \
+  --network postgres \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=1234 \
+  -e POSTGRES_DB=mydb \
+  -v $(pwd)/primary/postgresql.conf:/etc/postgresql/postgresql.conf \
+  -v pg_master_data:/var/lib/postgresql/data \
+  -p 5432:5432 \
+  postgres:13 \
+  -c config_file=/etc/postgresql/postgresql.conf
+
+docker rm -f pg-replica 
+docker volume rm pg_replica_data
+docker run --rm \
+  --network postgres \
+  -e PGPASSWORD=replica_pass \
+  -v pg_replica_data:/var/lib/postgresql/data \
+  postgres:13 \
+  bash -c "pg_basebackup -h pg-master -D /var/lib/postgresql/data -U replica_user -Fp -Xs -P -R"
+docker run -d \
+  --name pg-replica \
+  --network postgres \
+  -v pg_replica_data:/var/lib/postgresql/data \
+  -v $(pwd)/replica/postgresql.conf:/etc/postgresql/postgresql.conf \
+  -p 5433:5432 \
+  postgres:13 \
+  -c config_file=/etc/postgresql/postgresql.conf
