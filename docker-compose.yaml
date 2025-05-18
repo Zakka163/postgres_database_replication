@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  primary:
+    image: postgres:13
+    container_name: pg_primary
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: testdb
+    ports:
+      - "5432:5432"
+    command: postgres -c config_file=/var/lib/postgresql/data/postgresql.conf
+
+  replica:
+    image: postgres:13
+    container_name: pg_replica
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    depends_on:
+      - primary
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./replica/postgresql.conf:/var/lib/postgresql/data/postgresql.conf
+      - ./replica/replica-entrypoint.sh:/usr/local/bin/replica-entrypoint.sh
+      - replica_data:/var/lib/postgresql/data
+    entrypoint: ["bash", "/usr/local/bin/replica-entrypoint.sh"]
+
+volumes:
+  primary_data:
+  replica_data:
